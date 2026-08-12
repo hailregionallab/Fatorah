@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Invoice System — Hail Regional Laboratory</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; }
+  * { box-sizing: border-box; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback, useRef } = React;
+
+const LOGO_SRC = "data:image/png;base64,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";
+
+// ---------- Icons (small inline SVGs, no external icon library needed) ----------
+const Icon = ({ children, size = 16 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
+       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle" }}>
+    {children}
+  </svg>
+);
+const Plus = (p) => <Icon {...p}><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></Icon>;
+const Trash2 = (p) => <Icon {...p}><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" /><path d="M10 11v6" /><path d="M14 11v6" /></Icon>;
+const Printer = (p) => <Icon {...p}><polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><rect x="6" y="14" width="12" height="8" /></Icon>;
+const Save = (p) => <Icon {...p}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></Icon>;
+const Search = (p) => <Icon {...p}><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></Icon>;
+const ArrowLeft = (p) => <Icon {...p}><line x1="19" y1="12" x2="5" y2="12" /><polyline points="12 19 5 12 12 5" /></Icon>;
+const X = (p) => <Icon {...p}><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></Icon>;
+const Download = (p) => <Icon {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></Icon>;
+
+// ---------- Shared storage (Google Sheet via Apps Script Web App) ----------
+// 1. Create a Google Sheet, open Extensions > Apps Script, paste the provided Code.gs script.
+// 2. Deploy > New deployment > Web app (Execute as: Me, Who has access: Anyone).
+// 3. Copy the deployment URL and paste it below, replacing the placeholder.
+const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyInQ0EatYolTmr_uwiCwlrbpcScEpdAi-5k4kL7ZwjKAQqdfDqoOoK2rScG-VThuQFJw/exec";
+
+const storage = {
+  async listInvoices() {
+    const res = await fetch(`${SHEET_API_URL}?action=list`);
+    const data = await res.json();
+    return data.invoices || [];
+  },
+  async saveInvoice(invoice) {
+    await fetch(SHEET_API_URL, { method: "POST", body: JSON.stringify({ action: "save", invoice }) });
+  },
+  async deleteInvoice(id) {
+    await fetch(SHEET_API_URL, { method: "POST", body: JSON.stringify({ action: "delete", id }) });
+  },
+};
+
+// ---------- Design tokens ----------
+const FONT = "'Segoe UI', 'Helvetica Neue', Arial, sans-serif";
+
+const DEPARTMENTS = [
+  { code: "55595", name: "national clinic" },
+  { code: "55597", name: "Salamat Hospital" },
+  { code: "55598", name: "Al Safa General Medical Center 2" },
+  { code: "55596", name: "Rayan Al Sharq General Medical Complex" },
+  { code: "55599", name: "new hail labs 1" },
+  { code: "55600", name: "Saudi German Hospital" },
+  { code: "55601", name: "ALTAKHSEES MEDICAL GROUP" },
+  { code: "55602", name: "Al Anwar Hospital" },
+  { code: "55603", name: "alfa lab" },
+  { code: "55604", name: "salamat medical complex" },
+  { code: "55605", name: "ALSAHER MEDICAL COMPLEX" },
+  { code: "55606", name: "Al Safa General Medical Center 1" },
+  { code: "55607", name: "ALAHLI MEDICAL CENTER" },
+  { code: "55608", name: "new hail labs 2" },
+  { code: "55609", name: "ZAMZAM GENERAL MEDICAL COMPLEX" },
+  { code: "55610", name: "new medical center complex" },
+  { code: "55611", name: "ALKHLEEJ MEDICAL CENTER" },
+  { code: "55612", name: "IBN SINA MEDICAL COMPLEX" },
+  { code: "55613", name: "ALNOOR MEDICAL COMPLEX" },
+  { code: "55614", name: "ALBORG LABORATORY" },
+  { code: "55616", name: "ALKHUZAMa LAB" },
+  { code: "55618", name: "ROYAL MEDICAL CENTER" },
+  { code: "55615", name: "TABA  dent" },
+  { code: "55619", name: "HABEEB CLINIC MEDICAL COMPLEX" },
+  { code: "55617", name: "NOVA dental group" },
+  { code: "55637", name: "Al Ghassab Dental Complex" },
+  { code: "55640", name: "Al Muhaidib Orthodontic Medical" },
+  { code: "55656", name: "Hayat Medical Treatment" },
+  { code: "55666", name: "Allewa's Medical Complex" },
+  { code: "55667", name: "Baqa's General Medical Complex" },
+  { code: "55671", name: "HRL - TEST MEDICAL LAB" },
+  { code: "55672", name: "HRL - Aman Medical Lab" },
+  { code: "55673", name: "HRL - Riyadh Specialized Medical Complex" },
+  { code: "55674", name: "HRL - Enayati Specialized Medical Complex" },
+  { code: "55675", name: "HRL - Sama Specialist Clinic" },
+  { code: "55676", name: "HRL - Ramooz Medical Complex" },
+  { code: "55678", name: "HRL - Aljoudah Almotanahia Medical Complex (dr.tooth clinic)" },
+  { code: "55680", name: "HRL - Yassmine Alhayat Dental Center" },
+  { code: "55679", name: "HRL - Elim Alrazi Medical Complex" },
+  { code: "55682", name: "HRL - Banorama Medical Complex" },
+  { code: "55681", name: "HRL - Almas Medical Complex" },
+  { code: "55684", name: "HRL-Safa Al Oroba Medical Complex" },
+  { code: "55685", name: "HRL - LAKRY CLINIC" },
+  { code: "55686", name: "HRL - Bright Smile Dental Clinics" },
+  { code: "55687", name: "HRL - NEURO PT MEDICAL COMPLEX" },
+  { code: "55688", name: "HRL - ALSAFA MEDICAL COMPLEX-Sadyan" },
+  { code: "55689", name: "HRL- HAKEEM LABs - ALMUNTZAH ALGARBY" },
+  { code: "55690", name: "HRL- HAKEEM LABs - ALNUGRA" },
+  { code: "55691", name: "HRL - SHIFA AL-ABRAR POLYCLINIC" },
+  { code: "55692", name: "HRL - TEST MEDICAL LAB - ALNUQRAH" },
+  { code: "55693", name: "HRL - ABEER ALMANAR COMPLEX" },
+];
+
+const TEST_CATALOG = [
+  { code: "350139", name: "Anti Cardiolipin Antibody IgM", price: 145 },
+  { code: "350116", name: "Allergen, Tomato F25", price: 120 },
+  { code: "350158", name: "Anti Nuclear Antibody IFA", price: 960 },
+  { code: "320048", name: "Prostate Specific Ag", price: 145 },
+  { code: "320020", name: "CEA", price: 145 },
+  { code: "260024", name: "Rapid Plasma Reagin Test", price: 60 },
+  { code: "350052", name: "Allergen, Food Mix FX2", price: 120 },
+  { code: "320013", name: "Anti Thyroglobulin Ab", price: 120 },
+  { code: "320009", name: "25 Hydroxyvitamin D", price: 224 },
+  { code: "350018", name: "Allergen, Bermuda Grass G2", price: 120 },
+  { code: "300025", name: "C4 Complement", price: 120 },
+  { code: "350030", name: "Allergen, Chicken Feathers E85", price: 120 },
+  { code: "350016", name: "Allergen, Banana F92", price: 120 },
+  { code: "350084", name: "Allergen, Mugwort W6", price: 120 },
+  { code: "320056", name: "Thyroid Stimulating Hormone", price: 120 },
+  { code: "350037", name: "Allergen, Cow Dander E4", price: 120 },
+  { code: "350102", name: "Allergen, Ribwort (Plantain English) W9", price: 120 },
+  { code: "300092", name: "Protein Electrophoresis", price: 155 },
+  { code: "350032", name: "Allergen, Cockroach German i6", price: 120 },
+  { code: "350153", name: "Anti Islet Cell Antibody IFA", price: 190 },
+  { code: "320047", name: "Prolactin", price: 144 },
+  { code: "350061", name: "Allergen, Gelatin Bovine C74", price: 120 },
+  { code: "350105", name: "Allergen, Rye Grass G5", price: 120 },
+  { code: "350042", name: "Allergen, Dermatophagoides Farinae D2", price: 120 },
+  { code: "320014", name: "Anti Thyroid Peroxidase", price: 200 },
+  { code: "350135", name: "Anti Beta 2 glycoprotein I Antibody IgM", price: 240 },
+  { code: "350148", name: "Anti Glomerular Basement Membrane Ab", price: 170 },
+  { code: "300066", name: "IgM", price: 120 },
+  { code: "350115", name: "Allergen, Timothy Grass G6", price: 120 },
+  { code: "350118", name: "Allergen, Tree Pollens Mix TX6", price: 120 },
+  { code: "350177", name: "Anti-Sjogren's Syndrome type B Antibody", price: 145 },
+  { code: "320046", name: "Progesterone", price: 144 },
+  { code: "350168", name: "Anti Smooth Muscle Antibody IFA", price: 275 },
+  { code: "320023", name: "Cortisol PM", price: 120 },
+  { code: "320054", name: "Thyroglobulin", price: 120 },
+  { code: "350066", name: "Allergen, Grass Pollens Mix GX2", price: 120 },
+  { code: "320053", name: "Testosterone Total", price: 120 },
+  { code: "350187", name: "Total IgE", price: 120 },
+  { code: "350141", name: "Anti Cyclic Citrullinated Peptide", price: 120 },
+  { code: "320028", name: "Ferritin", price: 144 },
+  { code: "350038", name: "Allergen, Cow Milk F2", price: 120 },
+  { code: "320041", name: "LH", price: 144 },
+  { code: "350164", name: "Anti Scleroderma Antibody", price: 145 },
+  { code: "350147", name: "Anti Gliadin Antibody IgG", price: 170 },
+  { code: "340015", name: "Retic Count", price: 60 },
+  { code: "350047", name: "Allergen, Fish (Cod) F3", price: 120 },
+  { code: "350180", name: "AntiTissue Transglutaminase Antibody IgG", price: 180 },
+  { code: "300024", name: "C3 Complement", price: 120 },
+  { code: "350167", name: "Anti Smith Antibody", price: 145 },
+  { code: "320049", name: "PSA Free", price: 145 },
+  { code: "300067", name: "Immunofixation Eletrophoresis", price: 240 },
+  { code: "350080", name: "Allergen, Mesquite T20", price: 120 },
+  { code: "350020", name: "Allergen, Buckwheat F11", price: 120 },
+  { code: "350083", name: "Allergen, Mould Mix MX2", price: 120 },
+  { code: "350143", name: "Anti Double Strand Antibody IFA", price: 120 },
+  { code: "350074", name: "Allergen, House Dust Mix HX2", price: 120 },
+  { code: "320016", name: "CA 125", price: 145 },
+  { code: "350128", name: "Allergen,Dermatophagoides Pteronys D1", price: 120 },
+  { code: "350162", name: "Anti Proteinase 3 Antibody", price: 145 },
+  { code: "320022", name: "Cortisol AM", price: 120 },
+  { code: "350140", name: "Anti Centromere Antibody", price: 240 },
+  { code: "300056", name: "Glucose-6-PD Quantitative", price: 120 },
+  { code: "350067", name: "Allergen, Grey Alder T2", price: 120 },
+  { code: "300058", name: "Hemoglobin A1c", price: 145 },
+  { code: "350035", name: "Allergen, Common Silver Birch T3", price: 120 },
+  { code: "320029", name: "Folate", price: 144 },
+  { code: "350176", name: "Anti-Sjogren's Syndrome type A Antibody", price: 145 },
+  { code: "350026", name: "Allergen, Cat Dander E1", price: 120 },
+  { code: "350043", name: "Allergen, Dog Dander E5", price: 120 },
+  { code: "350079", name: "Allergen, Mango F91", price: 120 },
+  { code: "350111", name: "Allergen, Soybean F14", price: 120 },
+  { code: "300100", name: "Transferrin", price: 120 },
+  { code: "350159", name: "Anti Parietal Cell Antibody IFA", price: 145 },
+  { code: "350144", name: "Anti Endomysial Antibody IgA IFA", price: 170 },
+  { code: "340008", name: "Hemoglobin Electrophoresis", price: 120 },
+  { code: "320031", name: "FSH", price: 144 },
+  { code: "350119", name: "Allergen, Tuna F40", price: 120 },
+  { code: "350110", name: "Allergen, Shrimp F24", price: 120 },
+  { code: "350029", name: "Allergen, Chicken F83", price: 120 },
+  { code: "320024", name: "C-Peptide", price: 200 },
+  { code: "350163", name: "Anti Ribonucleoprotein/Smith Antibody", price: 145 },
+  { code: "350002", name: "Allergen, Acacia T19", price: 120 },
+  { code: "300057", name: "Haptoglobin", price: 120 },
+  { code: "320032", name: "FT3", price: 144 },
+  { code: "350124", name: "Allergen, Wheat F4", price: 120 },
+  { code: "350155", name: "Anti Mitochondrial Antibody IFA", price: 145 },
+  { code: "320017", name: "CA 15-3", price: 145 },
+  { code: "320033", name: "FT4", price: 144 },
+  { code: "350010", name: "Allergen, Aspergillus Fumigatus M3", price: 120 },
+  { code: "320025", name: "DHEAS", price: 50 },
+  { code: "350044", name: "Allergen, Egg White F1", price: 120 },
+  { code: "350069", name: "Allergen, Hazel T4", price: 120 },
+  { code: "320059", name: "Vitamin B12", price: 144 },
+  { code: "350072", name: "Allergen, Horse Dander E3", price: 120 },
+  { code: "320050", name: "PTH Intact", price: 145 },
+  { code: "350108", name: "Allergen, Sheep Epithelium E81", price: 120 },
+  { code: "350107", name: "Allergen, Sesame Seed F10", price: 120 },
+  { code: "350093", name: "Allergen, Peanut F13", price: 120 },
+  { code: "350057", name: "Allergen, Food Mix FX5", price: 120 },
+  { code: "320051", name: "RBC Folate", price: 144 },
+  { code: "320015", name: "Beta hCG Quantitative", price: 160 },
+  { code: "350103", name: "Allergen, Rice F9", price: 120 },
+  { code: "350129", name: "Allergen,Epidermals,Animal Proteins EX1", price: 120 },
+  { code: "350122", name: "Allergen, Weed Pollens Mix WX2", price: 120 },
+  { code: "350022", name: "Allergen, Candida Albicans M5", price: 120 },
+  { code: "320035", name: "Growth Hormone", price: 144 },
+  { code: "350138", name: "Anti Cardiolipin Antibody IgG", price: 170 },
+  { code: "350146", name: "Anti Gliadin Antibody IgA", price: 170 },
+  { code: "300061", name: "IgG", price: 120 },
+  { code: "350017", name: "Allergen, Barely F6", price: 120 },
+  { code: "320026", name: "Estradiol", price: 120 },
+  { code: "350156", name: "Anti Myeloperoxidase Antibody", price: 145 },
+  { code: "300060", name: "IgA", price: 180 },
+  { code: "350021", name: "Allergen, Cacao F93", price: 120 },
+  { code: "320021", name: "Cortisol 24h Urine", price: 120 },
+  { code: "350013", name: "Allergen, Aspergillus terreus M36", price: 120 },
+  { code: "350123", name: "Allergen, Western ragweed W2", price: 120 },
+  { code: "350014", name: "Allergen, Aubergine F262", price: 120 },
+  { code: "350056", name: "Allergen, Food Mix FX30", price: 120 },
+  { code: "350015", name: "Allergen, Avocado F96", price: 120 },
+  { code: "350058", name: "Allergen, Food Mix FX7", price: 120 },
+  { code: "350075", name: "Allergen, Insulin human C73", price: 120 },
+  { code: "350125", name: "Allergen, Yeast F45", price: 120 },
+  { code: "350019", name: "Allergen, Brazil nut F18", price: 120 },
+  { code: "350059", name: "Allergen, Food Mix FX77", price: 120 },
+  { code: "350183", name: "CTD SCREEN", price: 300 },
+  { code: "350023", name: "Allergen, Carrot F31", price: 120 },
+  { code: "350076", name: "Allergen, Lemon F208", price: 120 },
+  { code: "350126", name: "Allergen, Yellow hornet i5", price: 120 },
+  { code: "350060", name: "Allergen, Garlic F47", price: 120 },
+  { code: "350127", name: "Allergen,Aspergillus oryzae alpha amyK87", price: 120 },
+  { code: "350077", name: "Allergen, Lentil F235", price: 120 },
+  { code: "350062", name: "Allergen, Ginger F270", price: 120 },
+  { code: "350130", name: "Allergen,Saltwort(prickly)Russian th W11", price: 120 },
+  { code: "350078", name: "Allergen, Lobster Homarus gammarus F80", price: 120 },
+  { code: "350112", name: "Allergen, Spinach F214", price: 120 },
+  { code: "350100", name: "Allergen, Potato F35", price: 120 },
+  { code: "300064", name: "IgG subclasses 3", price: 300 },
+  { code: "350024", name: "Allergen, Casein (Milk) F78", price: 120 },
+  { code: "350088", name: "Allergen, Olive (black, fresh) F342", price: 120 },
+  { code: "350101", name: "Allergen, Pumpkin F225", price: 120 },
+  { code: "350113", name: "Allergen, Squid Loligo spp. F258", price: 120 },
+  { code: "300065", name: "IgG subclasses 4", price: 300 },
+  { code: "350041", name: "Allergen, Date F289", price: 120 },
+  { code: "350089", name: "Allergen, Onion F48", price: 120 },
+  { code: "350104", name: "Allergen, Rye F5", price: 120 },
+  { code: "350114", name: "Allergen, Strawberry F44", price: 120 },
+  { code: "350003", name: "Allergen, Almond F20", price: 120 },
+  { code: "350045", name: "Allergen, Egg yolk F75", price: 120 },
+  { code: "350091", name: "Allergen, Paper wasp i4", price: 120 },
+  { code: "350106", name: "Allergen, Sardine F308", price: 120 },
+  { code: "350120", name: "Allergen, Walnut F256", price: 120 },
+  { code: "350064", name: "Allergen, Goat epithelium E80", price: 120 },
+  { code: "350092", name: "Allergen, Peach Prunus persica F95", price: 120 },
+  { code: "350046", name: "Allergen, Fire ant i70", price: 120 },
+  { code: "350033", name: "Allergen, Coconut F36", price: 120 },
+  { code: "350007", name: "Allergen, Apple F49", price: 120 },
+  { code: "350109", name: "Allergen, Sheep whey F326", price: 120 },
+  { code: "350121", name: "Allergen, Watermelon F329", price: 120 },
+  { code: "350065", name: "Allergen, Goat milk F300", price: 120 },
+  { code: "350034", name: "Allergen, Common Pigweed W14", price: 120 },
+  { code: "350008", name: "Allergen, Apricot F237", price: 120 },
+  { code: "350094", name: "Allergen, Pear F94", price: 120 },
+  { code: "350036", name: "Allergen, Common wasp (Yellow jacket) i3", price: 120 },
+  { code: "350049", name: "Allergen, Food Mix FX15", price: 120 },
+  { code: "350142", name: "Anti Double Strand Antibody", price: 95 },
+  { code: "350070", name: "Allergen, Hazelnut F17", price: 120 },
+  { code: "350039", name: "Allergen, Cows milk F236", price: 120 },
+  { code: "350025", name: "Allergen, Cashew nut F202", price: 120 },
+  { code: "350011", name: "Allergen, Aspergillus Mix MX4", price: 120 },
+  { code: "350040", name: "Allergen, Cucumber F244", price: 120 },
+  { code: "350027", name: "Allergen, Celery Apium graveolens F85", price: 120 },
+  { code: "350028", name: "Allergen, Chick pea F309", price: 120 },
+  { code: "350012", name: "Allergen, Aspergillus niger M207", price: 120 },
+  { code: "350050", name: "Allergen, Food Mix FX16", price: 120 },
+  { code: "350095", name: "Allergen, Penicilloyl G C1", price: 120 },
+  { code: "350096", name: "Allergen, Penicilloyl V C2", price: 120 },
+  { code: "350051", name: "Allergen, Food Mix FX17", price: 120 },
+  { code: "350031", name: "Allergen, Cockroac i206", price: 120 },
+  { code: "350082", name: "Allergen, Mosquito i71", price: 120 },
+  { code: "350053", name: "Allergen, Food Mix FX20", price: 120 },
+  { code: "350085", name: "Allergen, Mushroom F212", price: 120 },
+  { code: "350054", name: "Allergen, Food Mix FX21", price: 120 },
+  { code: "350098", name: "Allergen, Pistachio F203", price: 120 },
+  { code: "350055", name: "Allergen, Food Mix FX22", price: 120 },
+  { code: "350086", name: "Allergen, Mutton F88", price: 120 },
+  { code: "350087", name: "Allergen, Nuts Mix FX1", price: 120 },
+  { code: "300033", name: "Ceruloplasmin", price: 120 },
+  { code: "300062", name: "IgG subclasses 1", price: 300 },
+  { code: "300063", name: "IgG subclasses 2", price: 300 },
+  { code: "350063", name: "Allergen, Gluten F79", price: 120 },
+  { code: "350090", name: "Allergen, Orange F33", price: 120 },
+  { code: "350117", name: "Allergen, Tree Pollens Mix TX5", price: 120 },
+  { code: "320012", name: "Alpha Fetoprotein", price: 200 },
+  { code: "350134", name: "Anti Beta 2 glycoprotein I Antibody IgG", price: 240 },
+  { code: "350179", name: "AntiTissue Transglutaminase Antibody IgA", price: 180 },
+  { code: "320018", name: "CA 19-9", price: 145 },
+  { code: "320039", name: "Insulin Lvl Total", price: 144 },
+  { code: "260033", name: "Treponema pallidum Heamagglutination Ab", price: 110 },
+  { code: "350211", name: "Anti Myeloperoxidase Antibody IFA", price: 240 },
+  { code: "350212", name: "Anti Proteinase 3 Antibody IFA", price: 240 },
+  { code: "320063", name: "Erythropoietin Level", price: 520 },
+  { code: "340022", name: "CBC with Auto Diff", price: 95 },
+  { code: "350203", name: "Allergen, Cheddar Cheese F81", price: 120 },
+  { code: "350207", name: "Allergen, Mold Mix 1 MX1", price: 120 },
+  { code: "350189", name: "Kappa/Lambda Ratio", price: 360 },
+  { code: "350081", name: "Allergen, Morphine C260", price: 120 },
+  { code: "350204", name: "Allergen, Cladosporium herbarum M2", price: 120 },
+  { code: "350208", name: "Allergen, Weed Allergen Mix 1 WX1", price: 120 },
+  { code: "350071", name: "Allergen, Honey bee i1", price: 120 },
+  { code: "350205", name: "Allergen, House Dust (Hollister-Stier) H2", price: 120 },
+  { code: "350209", name: "Allergen,goosefoot (Lamb's quarters) W10", price: 120 },
+  { code: "350206", name: "Allergen, House Dust Mite D3", price: 120 },
+  { code: "300120", name: "Alpha 1-Antitrypsin", price: 120 },
+  { code: "350192", name: "Aneutrophil Cytoplasmic Abodies(ANCA)", price: 480 },
+  { code: "350191", name: "ENA PROFILE", price: 300 },
+  { code: "350005", name: "Allergen, Ambrosia Mix WX209", price: 120 },
+  { code: "350009", name: "Allergen, Aspergillus flavus M228", price: 120 },
+  { code: "350097", name: "Allergen, Pineapple F210", price: 120 },
+  { code: "260034", name: "Varicella Zoster Antibody IgG", price: 120 },
+  { code: "260019", name: "HSV 1 IgG", price: 360 },
+  { code: "260020", name: "HSV 1 IgM", price: 360 },
+  { code: "260021", name: "HSV 2 IgG", price: 360 },
+  { code: "260022", name: "HSV 2 IgM", price: 360 },
+  { code: "320001", name: ".Growth Hormone Stimulation 120", price: 144 },
+  { code: "320002", name: ".Growth Hormone Stimulation 150", price: 144 },
+  { code: "320003", name: ".Growth Hormone Stimulation 180", price: 144 },
+  { code: "320006", name: ".Growth Hormone Stimulation 90", price: 144 },
+  { code: "320004", name: ".Growth Hormone Stimulation 30", price: 144 },
+  { code: "320007", name: ".Growth Hormone Stimulation Baseline", price: 144 },
+  { code: "320005", name: ".Growth Hormone Stimulation 60", price: 144 },
+  { code: "320060", name: ".Growth Hormone Stimulation 15", price: 144 },
+  { code: "320061", name: ".Growth Hormone Stimulation 45", price: 144 },
+  { code: "260101", name: "Epstein Barr Virus IgG", price: 384 },
+  { code: "260102", name: "Epstein Barr Virus IgM", price: 128 },
+  { code: "320069", name: "Renin test", price: 264 },
+  { code: "320011", name: "Aldosterone", price: 340 },
+  { code: "320008", name: "17-OH Progesterone", price: 120 },
+  { code: "260099", name: "EBV VCA IgG", price: 384 },
+  { code: "260100", name: "EBV VCA IgM", price: 128 },
+  { code: "260028", name: "Rubella Antibody IgG", price: 128 },
+  { code: "260007", name: "Hepatitis A Antibody IgM", price: 120 },
+  { code: "260018", name: "HIV 1/2 Antigen Antibody Combo", price: 160 },
+  { code: "260015", name: "Hepatitis B Surface Antigen Conf", price: 288 },
+  { code: "260016", name: "Hepatitis C Antibody", price: 120 },
+  { code: "260013", name: "Hepatitis B Surface Antibody", price: 50 },
+  { code: "250003", name: "Nail Swab Culture for Food Poison", price: 120 },
+  { code: "250017", name: "Water Culture", price: 120 },
+  { code: "260003", name: "Cytomegalovirus Antibody IgG", price: 120 },
+  { code: "260014", name: "Hepatitis B Surface Antigen", price: 80 },
+  { code: "250001", name: "Food Culture", price: 120 },
+  { code: "260010", name: "Hepatitis B Core Antibody Total", price: 50 },
+  { code: "260009", name: "Hepatitis B Core Antibody IgM", price: 95 },
+  { code: "250004", name: "Nasal Swab Culture for Food Poison", price: 110 },
+  { code: "260004", name: "Cytomegalovirus Antibody IgM", price: 120 },
+  { code: "260011", name: "Hepatitis B e Antibody", price: 95 },
+  { code: "250011", name: "Endotoxin", price: 600 },
+  { code: "260031", name: "Toxoplasma Antibody IgG", price: 120 },
+  { code: "260032", name: "Toxoplasma Antibody IgM", price: 120 },
+  { code: "260012", name: "Hepatitis B e Antigen", price: 75 },
+  { code: "250007", name: "Throat Swab Culture for Food Poison", price: 110 },
+  { code: "250005", name: "Rectal Swab Culture for Food Poison", price: 110 },
+  { code: "250002", name: "Gastric lavage / wash Culture for Food Poison", price: 110 },
+  { code: "260070", name: "Hepatitis A Antibody IgG", price: 80 },
+  { code: "260052", name: "Hepatitis C Antibody Confirmation", price: 360 },
+  { code: "260049", name: "HIV 1/2 Antibody Confirmation", price: 440 },
+  { code: "260105", name: "Rubella Antibody IgM", price: 128 },
+  { code: "260112", name: "Syphilis Test", price: 60 },
+  { code: "200016", name: "Environmental Culture", price: 110 },
+  { code: "400030", name: "HCV PCR", price: 720 },
+  { code: "400028", name: "HBV PCR", price: 720 },
+  { code: "400009", name: "CMV PCR", price: 936 },
+  { code: "400017", name: "EBV PCR", price: 688 },
+  { code: "400031", name: "HIV-1 RNA PCR", price: 960 },
+  { code: "400068", name: "Infuenza A/B", price: 150 },
+  { code: "400022", name: "Flu,RSV,SARS Multiplex", price: 520 },
+  { code: "400069", name: "RSV", price: 85 },
+  { code: "400041", name: "Respiratory Panel", price: 520 },
+  { code: "400050", name: "SARS-CoV-2 PCR", price: 245 },
+  { code: "400060", name: "Glucose-6-PD.", price: 120 },
+];
+
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+const emptyRow = () => ({ id: uid(), code: "", name: "", qty: 1, price: "" });
+
+const emptyInvoice = () => ({
+  id: uid(),
+  billTo: "",
+  invoiceDate: new Date().toISOString().slice(0, 10),
+  accessionNo: "",
+  invoiceNo: "",
+  paymentMode: "CASH",
+  rows: [emptyRow()],
+  savedAt: null,
+});
+
+function toSAR(n) {
+  const v = Number(n) || 0;
+  return v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function rowAmount(row) { return (Number(row.qty) || 0) * (Number(row.price) || 0); }
+function invoiceTotal(inv) { return inv.rows.reduce((sum, r) => sum + rowAmount(r), 0); }
+
+function InvoiceSystem() {
+  const [view, setView] = useState("editor");
+  const [invoice, setInvoice] = useState(emptyInvoice());
+  const [savedInvoices, setSavedInvoices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState("");
+  const [search, setSearch] = useState("");
+  const [customDept, setCustomDept] = useState(false);
+  const [deptCode, setDeptCode] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const sheetRef = useRef(null);
+
+  useEffect(() => {
+    setCustomDept(invoice.billTo !== "" && !DEPARTMENTS.some((d) => d.name === invoice.billTo));
+    const match = DEPARTMENTS.find((d) => d.name === invoice.billTo);
+    setDeptCode(match ? match.code : "");
+  }, [invoice.id]);
+
+  const handleDeptCodeChange = (value) => {
+    setDeptCode(value);
+    const match = DEPARTMENTS.find((d) => d.code === value.trim());
+    if (match) {
+      setCustomDept(false);
+      updateField("billTo", match.name);
+    }
+  };
+
+  const handleTestCodeChange = (id, value) => {
+    const match = TEST_CATALOG.find((t) => t.code === value.trim());
+    if (match) {
+      updateRowMulti(id, { code: match.code, name: match.name, price: match.price });
+    } else {
+      updateRow(id, "code", value);
+    }
+  };
+
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
+
+  const loadInvoices = useCallback(async () => {
+    try {
+      const items = await storage.listInvoices();
+      items.sort((a, b) => (b.savedAt || "").localeCompare(a.savedAt || ""));
+      setSavedInvoices(items);
+    } catch (e) {
+      setSavedInvoices([]);
+      showToast("Could not load shared invoices — check the connection setup");
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { loadInvoices(); }, [loadInvoices]);
+
+  useEffect(() => {
+    if (SHEET_API_URL.includes("PASTE_YOUR")) {
+      showToast("Shared storage isn't connected yet — see the setup comment in the code");
+    }
+  }, []);
+
+  const updateField = (field, value) => setInvoice((prev) => ({ ...prev, [field]: value }));
+  const updateRow = (id, field, value) => setInvoice((prev) => ({
+    ...prev, rows: prev.rows.map((r) => (r.id === id ? { ...r, [field]: value } : r)),
+  }));
+  const updateRowMulti = (id, patch) => setInvoice((prev) => ({
+    ...prev, rows: prev.rows.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+  }));
+  const addRow = () => setInvoice((prev) => ({ ...prev, rows: [...prev.rows, emptyRow()] }));
+  const removeRow = (id) => setInvoice((prev) => ({
+    ...prev, rows: prev.rows.length > 1 ? prev.rows.filter((r) => r.id !== id) : prev.rows,
+  }));
+
+  const saveInvoice = async () => {
+    setSaving(true);
+    const toSave = { ...invoice, savedAt: new Date().toISOString() };
+    try {
+      await storage.saveInvoice(toSave);
+      setInvoice(toSave);
+      showToast("Invoice saved");
+      loadInvoices();
+    } catch (e) { showToast("Could not save, please try again"); }
+    setSaving(false);
+  };
+
+  const downloadPdf = async () => {
+    setExporting(true);
+    try {
+      if (!window.html2canvas || !window.jspdf) {
+        showToast("PDF libraries did not load — open this file directly in your device browser");
+        setExporting(false);
+        return;
+      }
+      const canvas = await window.html2canvas(sheetRef.current, { scale: 2, backgroundColor: "#ffffff" });
+      const imgData = canvas.toDataURL("image/png");
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ orientation: "portrait", unit: "pt", format: "a4" });
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const imgRatio = canvas.height / canvas.width;
+      let imgWidth = pageWidth;
+      let imgHeight = imgWidth * imgRatio;
+      if (imgHeight > pageHeight) { imgHeight = pageHeight; imgWidth = imgHeight / imgRatio; }
+      pdf.addImage(imgData, "PNG", (pageWidth - imgWidth) / 2, 0, imgWidth, imgHeight);
+      pdf.save(`invoice-${invoice.invoiceNo || invoice.id}.pdf`);
+    } catch (e) {
+      showToast("Could not generate PDF: " + (e && e.message ? e.message : "unknown error"));
+    }
+    setExporting(false);
+  };
+
+  const deleteInvoice = async (id) => {
+    try { await storage.deleteInvoice(id); showToast("Invoice deleted"); loadInvoices(); }
+    catch (e) { showToast("Could not delete"); }
+  };
+
+  const openInvoice = (inv) => { setInvoice(inv); setView("editor"); };
+  const newInvoice = () => { setInvoice(emptyInvoice()); setView("editor"); };
+
+  const total = invoiceTotal(invoice);
+  const filteredList = savedInvoices.filter((inv) => {
+    const q = search.trim();
+    if (!q) return true;
+    return (inv.billTo || "").toLowerCase().includes(q.toLowerCase())
+      || (inv.invoiceNo || "").toLowerCase().includes(q.toLowerCase())
+      || (inv.accessionNo || "").toLowerCase().includes(q.toLowerCase());
+  });
+
+  return (
+    <div dir="ltr" style={{ fontFamily: FONT, background: "#F6F5F1", minHeight: "100vh", color: "#1C2624" }}>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .print-area { box-shadow: none !important; margin: 0 !important; }
+          body { background: white !important; }
+        }
+        input:focus, textarea:focus, select:focus { outline: 2px solid #0F5257; outline-offset: 1px; }
+        button { transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.15s ease; }
+        button:hover:not(:disabled) { transform: translateY(-1px); }
+        button:active:not(:disabled) { transform: translateY(0); }
+        button:disabled { opacity: 0.6; cursor: default; }
+        .line-table tbody tr:nth-child(even) { background: #FAFAF7; }
+        .line-table tbody tr:hover { background: #F1F6F5; }
+        input:hover, select:hover { border-color: #9DB4B2; }
+
+        @media (max-width: 640px) {
+          .invoice-sheet { padding: 16px 12px !important; }
+          .meta-grid { grid-template-columns: 1fr !important; }
+          .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+          .line-table { min-width: 620px; }
+          .header-logo { width: 56px !important; }
+          .top-bar { padding: 10px 12px !important; }
+          .payment-total-row { flex-direction: column; align-items: flex-start !important; gap: 16px; }
+          .payment-total-row > div:last-child { text-align: left !important; align-self: stretch; }
+        }
+      `}</style>
+
+      <div className="no-print top-bar" style={{ background: "linear-gradient(135deg, #0E5C62 0%, #0A3F43 100%)", color: "#F6F5F1", padding: "14px 24px", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <img src={LOGO_SRC} alt="Hail Health Cluster" style={{ width: 34, height: 34, objectFit: "contain", background: "white", borderRadius: "50%", padding: 3 }} />
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15 }}>Hail Regional Laboratory</div>
+            <div style={{ fontSize: 11.5, opacity: 0.75 }}>Invoice System — Revenue Development Department</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button onClick={() => setView(view === "editor" ? "list" : "editor")} style={btnGhost}>
+            {view === "editor" ? "Saved Invoices" : (
+              <span style={{ display: "flex", alignItems: "center", gap: 6 }}><ArrowLeft size={15} /> Back to Editor</span>
+            )}
+          </button>
+          {view === "editor" && <button onClick={newInvoice} style={btnGhost}>New Invoice</button>}
+        </div>
+      </div>
+
+      {toast && (
+        <div className="no-print" style={{ position: "fixed", top: 70, right: 20, background: "#1C2624", color: "#F6F5F1", padding: "10px 16px", borderRadius: 8, fontSize: 13.5, zIndex: 50, boxShadow: "0 4px 14px rgba(0,0,0,0.2)", maxWidth: 280 }}>
+          {toast}
+        </div>
+      )}
+
+      {view === "list" ? (
+        <div style={{ maxWidth: 820, margin: "0 auto", padding: "28px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+            <Search size={16} color="#6B7A78" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name, invoice number, or accession number"
+              style={{ flex: 1, padding: "10px 12px", borderRadius: 8, border: "1px solid #D8D4C8", fontFamily: FONT, fontSize: 13.5, background: "white" }} />
+          </div>
+
+          {loading ? (
+            <div style={{ textAlign: "center", padding: 40, color: "#6B7A78" }}>Loading...</div>
+          ) : filteredList.length === 0 ? (
+            <div style={{ textAlign: "center", padding: 50, color: "#6B7A78", fontSize: 14 }}>
+              No saved invoices yet. Once you save an invoice from the editor, it will appear here.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {filteredList.map((inv) => (
+                <div key={inv.id} style={{ background: "white", border: "1px solid #E4E1D6", borderRadius: 10, padding: "14px 16px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+                  <div style={{ cursor: "pointer", flex: 1 }} onClick={() => openInvoice(inv)}>
+                    <div style={{ fontWeight: 700, fontSize: 14.5 }}>
+                      {inv.billTo || "Unnamed"} {inv.invoiceNo && `— Invoice No ${inv.invoiceNo}`}
+                    </div>
+                    <div style={{ fontSize: 12, color: "#6B7A78", marginTop: 3 }}>
+                      {inv.invoiceDate} · Accession No: {inv.accessionNo || "—"} · Total: {toSAR(invoiceTotal(inv))} SAR
+                    </div>
+                  </div>
+                  <button onClick={() => deleteInvoice(inv.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#B5544B", padding: 6 }} aria-label="Delete">
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : (
+        <div style={{ maxWidth: 900, margin: "0 auto", padding: "24px 16px 60px" }}>
+          <div className="no-print" style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+            <button onClick={saveInvoice} disabled={saving} style={btnPrimary}>
+              <Save size={15} /> {saving ? "Saving..." : "Save Invoice"}
+            </button>
+            <button onClick={() => window.print()} style={btnSecondary}>
+              <Printer size={15} /> Print
+            </button>
+            <button onClick={downloadPdf} disabled={exporting} style={btnSecondary}>
+              <Download size={15} /> {exporting ? "Preparing..." : "Download PDF"}
+            </button>
+          </div>
+
+          <div ref={sheetRef} className="print-area invoice-sheet" style={{ background: "white", border: "1px solid #E9E6DA", borderRadius: 12, boxShadow: "0 1px 2px rgba(20,30,28,0.04), 0 8px 24px rgba(20,30,28,0.06)", padding: "34px 38px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #0F5257", paddingBottom: 16, marginBottom: 22 }}>
+              <div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#0F5257" }}>Kingdom of Saudi Arabia</div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, marginTop: 2 }}>Hail Health Cluster</div>
+                <div style={{ fontSize: 13, color: "#3D4A48" }}>Hail Regional Laboratory</div>
+                <div style={{ fontSize: 11.5, color: "#3D4A48", marginTop: 2 }}>Revenue Development Department</div>
+                <div style={{ fontSize: 11, color: "#6B7A78", marginTop: 6 }}>Hail, Al Massif, HASC3874, 016-5353007</div>
+              </div>
+              <img src={LOGO_SRC} alt="Hail Health Cluster" className="header-logo" style={{ width: 92, height: "auto", objectFit: "contain" }} />
+            </div>
+
+            <div style={{ fontSize: 20, fontWeight: 800, color: "#1C2624", marginBottom: 18 }}>Invoice</div>
+
+            <div className="meta-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 22 }}>
+              <Field label="Bill To">
+                <input
+                  value={deptCode}
+                  onChange={(e) => handleDeptCodeChange(e.target.value)}
+                  placeholder="Enter department code"
+                  style={{ ...inputStyle, marginBottom: 6 }}
+                />
+                <select
+                  value={customDept ? "CUSTOM" : invoice.billTo}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "CUSTOM") { setCustomDept(true); updateField("billTo", ""); setDeptCode(""); }
+                    else {
+                      setCustomDept(false);
+                      updateField("billTo", val);
+                      const match = DEPARTMENTS.find((d) => d.name === val);
+                      setDeptCode(match ? match.code : "");
+                    }
+                  }}
+                  style={inputStyle}
+                >
+                  <option value="">Or select requesting department</option>
+                  {DEPARTMENTS.map((d) => <option key={d.code} value={d.name}>{d.name}</option>)}
+                  <option value="CUSTOM">Other (manual entry)</option>
+                </select>
+                {customDept && (
+                  <input value={invoice.billTo} onChange={(e) => updateField("billTo", e.target.value)}
+                    placeholder="Enter department name" style={{ ...inputStyle, marginTop: 6 }} />
+                )}
+              </Field>
+              <Field label="Invoice Date">
+                <input type="date" value={invoice.invoiceDate} onChange={(e) => updateField("invoiceDate", e.target.value)} style={inputStyle} />
+              </Field>
+              <Field label="Accession No">
+                <input value={invoice.accessionNo} onChange={(e) => updateField("accessionNo", e.target.value)} style={inputStyle} placeholder="—" />
+              </Field>
+              <Field label="Invoice No">
+                <input value={invoice.invoiceNo} onChange={(e) => updateField("invoiceNo", e.target.value)} style={inputStyle} placeholder="—" />
+              </Field>
+            </div>
+
+            <div className="table-scroll">
+            <table className="line-table" style={{ width: "100%", borderCollapse: "collapse", marginBottom: 6 }}>
+              <thead>
+                <tr style={{ background: "linear-gradient(180deg, #12636A 0%, #0B4E53 100%)" }}>
+                  {["SN", "Test Code", "Test Name", "Qty", "Test Price", "Amount", ""].map((h, i) => (
+                    <th key={i} style={{ color: "white", fontSize: 12, padding: "9px 8px", textAlign: "center", fontWeight: 700 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {invoice.rows.map((row, idx) => {
+                  const isCatalog = TEST_CATALOG.some((t) => t.code === row.code);
+                  const selectValue = row.code === "" ? "" : isCatalog ? row.code : "CUSTOM";
+                  return (
+                    <tr key={row.id} style={{ borderBottom: "1px solid #E4E1D6" }}>
+                      <td style={tdCenter}>{idx + 1}</td>
+                      <td style={td}>
+                        <input
+                          value={row.code}
+                          onChange={(e) => handleTestCodeChange(row.id, e.target.value)}
+                          placeholder="Type code"
+                          style={cellInput}
+                        />
+                      </td>
+                      <td style={td}>
+                        <select
+                          value={selectValue}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === "CUSTOM") updateRowMulti(row.id, { code: "" });
+                            else if (val === "") updateRowMulti(row.id, { code: "", name: "" });
+                            else {
+                              const t = TEST_CATALOG.find((x) => x.code === val);
+                              updateRowMulti(row.id, { code: t.code, name: t.name, price: row.price || t.price });
+                            }
+                          }}
+                          style={{ ...cellInput, marginBottom: 4, fontSize: 11.5 }}
+                        >
+                          <option value="">Browse test name</option>
+                          {TEST_CATALOG.map((t) => <option key={t.code} value={t.code}>{t.name}</option>)}
+                          <option value="CUSTOM">Other (manual)</option>
+                        </select>
+                        {selectValue !== "" && selectValue !== "CUSTOM" ? null : (
+                          <input value={row.name} onChange={(e) => updateRow(row.id, "name", e.target.value)} placeholder="Test name" style={cellInput} />
+                        )}
+                      </td>
+                      <td style={td}>
+                        <input type="number" min="0" value={row.qty} onChange={(e) => updateRow(row.id, "qty", e.target.value)} style={{ ...cellInput, textAlign: "center" }} />
+                      </td>
+                      <td style={td}>
+                        <input type="number" min="0" value={row.price} onChange={(e) => updateRow(row.id, "price", e.target.value)} style={{ ...cellInput, textAlign: "center" }} placeholder="0.00" />
+                      </td>
+                      <td style={{ ...tdCenter, fontWeight: 700 }}>{toSAR(rowAmount(row))}</td>
+                      <td className="no-print" style={{ ...tdCenter, width: 30 }}>
+                        <button onClick={() => removeRow(row.id)} style={{ background: "none", border: "none", cursor: "pointer", color: "#B5544B" }} aria-label="Remove row">
+                          <X size={14} />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+            </div>
+
+            <button onClick={addRow} className="no-print" style={addRowBtn}>
+              <Plus size={14} /> Add Test
+            </button>
+
+            <div className="payment-total-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginTop: 26, paddingTop: 16, borderTop: "1px solid #E4E1D6" }}>
+              <div>
+                <div style={{ fontSize: 12, color: "#6B7A78", marginBottom: 8, fontWeight: 700 }}>Payment Mode</div>
+                <div style={{ display: "flex", gap: 16 }}>
+                  {["CASH", "CREDIT"].map((mode) => (
+                    <label key={mode} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, cursor: "pointer" }}>
+                      <input type="radio" name="paymentMode" checked={invoice.paymentMode === mode} onChange={() => updateField("paymentMode", mode)} />
+                      {mode === "CASH" ? "Cash" : "Credit"}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ fontSize: 12, color: "#6B7A78", fontWeight: 700 }}>Total (SAR)</div>
+                <div style={{ fontSize: 26, fontWeight: 800, color: "#0F5257" }}>{toSAR(total)}</div>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-start", marginTop: 40 }}>
+              <div style={{ minWidth: 200 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#6B7A78" }}>Accountant</div>
+                <div style={{ borderBottom: "1px solid #1C2624", height: 34, marginTop: 6 }} />
+                <div style={{ fontSize: 11, color: "#6B7A78", marginTop: 4 }}>Signature</div>
+              </div>
+            </div>
+
+            <div style={{ marginTop: 28, fontSize: 10.5, color: "#9AA3A1", textAlign: "center" }}>
+              Currency used in invoices: Saudi Riyals (SAR)
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11.5, color: "#6B7A78", fontWeight: 700, marginBottom: 4 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+const inputStyle = { width: "100%", padding: "9px 11px", borderRadius: 8, border: "1px solid #DCD8CC", fontFamily: FONT, fontSize: 13.5, color: "#1C2624", background: "#FFFFFF", boxSizing: "border-box", transition: "border-color 0.15s ease, box-shadow 0.15s ease" };
+const cellInput = { width: "100%", border: "none", background: "transparent", fontFamily: FONT, fontSize: 13, padding: "9px 7px", boxSizing: "border-box" };
+const td = { padding: "2px 4px", textAlign: "center" };
+const tdCenter = { padding: "11px 4px", textAlign: "center", fontSize: 13 };
+const btnGhost = { background: "rgba(255,255,255,0.10)", color: "#F6F5F1", border: "1px solid rgba(255,255,255,0.28)", borderRadius: 8, padding: "8px 15px", fontFamily: FONT, fontSize: 12.5, fontWeight: 600, cursor: "pointer" };
+const btnPrimary = { background: "linear-gradient(180deg, #12636A 0%, #0B4E53 100%)", color: "white", border: "none", borderRadius: 8, padding: "10px 18px", fontFamily: FONT, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 2px 6px rgba(11,78,83,0.28)" };
+const btnSecondary = { background: "white", color: "#0B4E53", border: "1px solid #C7D6D5", borderRadius: 8, padding: "10px 18px", fontFamily: FONT, fontSize: 13, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 7, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" };
+const addRowBtn = { background: "#F3F6F5", border: "1px dashed #9DB4B2", color: "#0B4E53", borderRadius: 7, padding: "8px 16px", fontFamily: FONT, fontSize: 12.5, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 };
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<InvoiceSystem />);
+</script>
+</body>
+</html>
