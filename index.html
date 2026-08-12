@@ -77,6 +77,41 @@ function jsonp_(url) {
   });
 }
 
+// Hidden-form submission to a hidden iframe: the most universally-compatible
+// way to send data cross-origin. It is a plain HTML form submit, so it is
+// not affected by CORS, ad/tracker blockers, or fetch-related restrictions.
+// We can't read a response this way, so we treat it as fire-and-forget and
+// rely on re-loading the list afterward to confirm the change landed.
+function formSubmit_(params) {
+  return new Promise((resolve) => {
+    let iframe = document.getElementById("hidden_submit_frame");
+    if (!iframe) {
+      iframe = document.createElement("iframe");
+      iframe.name = "hidden_submit_frame";
+      iframe.id = "hidden_submit_frame";
+      iframe.style.display = "none";
+      document.body.appendChild(iframe);
+    }
+    const form = document.createElement("form");
+    form.method = "GET";
+    form.action = SHEET_API_URL;
+    form.target = "hidden_submit_frame";
+    Object.keys(params).forEach((key) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = key;
+      input.value = params[key];
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+    setTimeout(() => {
+      form.remove();
+      resolve();
+    }, 1200);
+  });
+}
+
 const storage = {
   async listInvoices() {
     const data = await jsonp_(`${SHEET_API_URL}?action=list`);
@@ -84,14 +119,10 @@ const storage = {
     return data.invoices || [];
   },
   async saveInvoice(invoice) {
-    const url = `${SHEET_API_URL}?action=save&invoice=${encodeURIComponent(JSON.stringify(invoice))}`;
-    const data = await jsonp_(url);
-    if (data.error) throw new Error(data.error);
+    await formSubmit_({ action: "save", invoice: JSON.stringify(invoice) });
   },
   async deleteInvoice(id) {
-    const url = `${SHEET_API_URL}?action=delete&id=${encodeURIComponent(id)}`;
-    const data = await jsonp_(url);
-    if (data.error) throw new Error(data.error);
+    await formSubmit_({ action: "delete", id: id });
   },
 };
 
