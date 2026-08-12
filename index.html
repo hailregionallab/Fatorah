@@ -47,14 +47,22 @@ const SHEET_API_URL = "https://script.google.com/macros/s/AKfycbyInQ0EatYolTmr_u
 const storage = {
   async listInvoices() {
     const res = await fetch(`${SHEET_API_URL}?action=list`);
+    if (!res.ok) throw new Error(`List failed: HTTP ${res.status}`);
     const data = await res.json();
+    if (data.error) throw new Error(data.error);
     return data.invoices || [];
   },
   async saveInvoice(invoice) {
-    await fetch(SHEET_API_URL, { method: "POST", body: JSON.stringify({ action: "save", invoice }) });
+    const res = await fetch(SHEET_API_URL, { method: "POST", body: JSON.stringify({ action: "save", invoice }) });
+    if (!res.ok) throw new Error(`Save failed: HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
   },
   async deleteInvoice(id) {
-    await fetch(SHEET_API_URL, { method: "POST", body: JSON.stringify({ action: "delete", id }) });
+    const res = await fetch(SHEET_API_URL, { method: "POST", body: JSON.stringify({ action: "delete", id }) });
+    if (!res.ok) throw new Error(`Delete failed: HTTP ${res.status}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
   },
 };
 
@@ -499,7 +507,7 @@ function InvoiceSystem() {
       setInvoice(toSave);
       showToast("Invoice saved");
       loadInvoices();
-    } catch (e) { showToast("Could not save, please try again"); }
+    } catch (e) { showToast("Could not save: " + (e && e.message ? e.message : "unknown error")); }
     setSaving(false);
   };
 
